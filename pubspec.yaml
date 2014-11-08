@@ -1,0 +1,8 @@
+name: image_effect
+version: 0.0.1
+description: image effect
+dependencies:
+  browser: any
+  vector_math: any
+dev_dependencies:
+#  unittest: any
