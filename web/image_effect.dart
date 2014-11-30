@@ -35,6 +35,8 @@ class Canvas {
   int _a_texture_coord;
 
   VideoElement _video;
+  VideoElement _video_movie;
+  VideoElement _video_camera;
 
   static const String VS =
   """
@@ -90,16 +92,21 @@ class Canvas {
     this._initWebGL(canvas);
     this._initShader();
     this._initVideoTexture();
-
     this._initTexture3D();
     this._gl.useProgram(this._program);
+
+    ImageElement default_image = document.querySelector("#default");
+    this._setTexture3D(default_image);
+
+    this._video = this._video_movie;
+
     document.querySelector("#default_link").onClick.listen((event) => this._setTexture3D(document.querySelector("#default")));
     document.querySelector("#negative_positive_link").onClick.listen((event) => this._setTexture3D(document.querySelector("#negative_positive")));
     document.querySelector("#blue_link").onClick.listen((event) => this._setTexture3D(document.querySelector("#blue")));
     document.querySelector("#sepia_link").onClick.listen((event) => this._setTexture3D(document.querySelector("#sepia")));
 
-    ImageElement default_image = document.querySelector("#default");
-    this._setTexture3D(default_image);
+    document.querySelector("#movie_link").onClick.listen((event) => this._video = this._video_movie);
+    document.querySelector("#camera_link").onClick.listen((event) => this._video = this._video_camera);
   }
 
   CanvasElement _texture_3d_canvas;
@@ -209,7 +216,11 @@ class Canvas {
     this._video_canvas = video_canvas;
     this._video_canvas_context = video_canvas_context;
 
-    this._video = document.querySelector("#video");
+    this._video_movie = document.querySelector("#video");
+    this._video_camera = document.querySelector("#video_camera");
+    window.navigator.getUserMedia(video: true, audio: false).then((MediaStream stream){
+      this._video_camera.src = Url.createObjectUrlFromStream(stream);
+    });
   }
 
   Future<Stream<num>> start() {
@@ -219,7 +230,6 @@ class Canvas {
     HttpRequest request = new HttpRequest();
     request.onLoad.listen((event){
       var gl = this._gl;
-      this._video.play();
 
       Map mesh = JSON.decode(request.responseText);
 
