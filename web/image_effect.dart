@@ -95,6 +95,8 @@ class Canvas {
     this._gl.useProgram(this._program);
     document.querySelector("#default_link").onClick.listen((event) => this._setTexture3D(document.querySelector("#default")));
     document.querySelector("#negative_positive_link").onClick.listen((event) => this._setTexture3D(document.querySelector("#negative_positive")));
+    document.querySelector("#blue_link").onClick.listen((event) => this._setTexture3D(document.querySelector("#blue")));
+    document.querySelector("#sepia_link").onClick.listen((event) => this._setTexture3D(document.querySelector("#sepia")));
 
     ImageElement default_image = document.querySelector("#default");
     this._setTexture3D(default_image);
