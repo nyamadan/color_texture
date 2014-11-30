@@ -3,7 +3,6 @@ import "dart:async";
 import "dart:convert";
 import "dart:typed_data";
 import "dart:web_gl" as GL;
-import "dart:math" as Math;
 
 import "package:vector_math/vector_math.dart";
 
@@ -87,16 +86,6 @@ class Canvas {
   static const int MOVIE_WIDTH = 854;
   static const int MOVIE_HEIGHT = 480;
 
-  CanvasElement _createTextureLink(String anchor_selector, String canvas_selector, f(Vector3)) {
-    var canvas_element = document.querySelector(canvas_selector) as CanvasElement;
-    this._drawTexture3D(canvas_element, f);
-    document.querySelector(anchor_selector).onClick.listen((MouseEvent event){
-      event.preventDefault();
-      this._setTexture3D(canvas_element);
-    });
-    return canvas_element;
-  }
-
   Canvas(String selector) {
 
     CanvasElement canvas = querySelector(selector);
@@ -105,63 +94,10 @@ class Canvas {
     this._initVideoTexture();
 
     this._initTexture3D();
-
-    var default_canvas = this._createTextureLink("#default_link", "#default", (Vector3 p){
-      return new Vector4(p.r, p.g, p.b, 1.0);
-    });
-
-    this._createTextureLink("#sin_link", "#sin", (Vector3 p){
-      return new Vector4(Math.sin(p.r), Math.sin(p.g), Math.sin(p.b), 1.0);
-    });
-
-    this._createTextureLink("#bgr_link", "#bgr", (Vector3 p){
-      return new Vector4(p.b, p.g, p.r, 1.0);
-    });
-
-    this._createTextureLink("#high_link", "#high", (Vector3 p){
-      return new Vector4(p.r * 0.5 + 0.5, p.g * 0.5 + 0.5, p.b * 0.5 + 0.5, 1.0);
-    });
-
-    this._createTextureLink("#low_link", "#low", (Vector3 p){
-      return new Vector4(p.r * 0.5, p.g * 0.5, p.b * 0.5, 1.0);
-    });
-
-    this._createTextureLink("#negpos_link", "#negpos", (Vector3 p){
-      return new Vector4(1.0 - p.r, 1.0 - p.g, 1.0 - p.b, 1.0);
-    });
-
-    this._createTextureLink("#binary_link", "#binary", (Vector3 rgb){
-      num s = Math.max(Math.max(rgb.r, rgb.g), rgb.b);
-      if(s < 0.8) {
-        s = 0.0;
-      } else {
-        s = 1.0;
-      }
-      return new Vector4(s, s, s, 1.0);
-    });
-
-    this._createTextureLink("#gray_link", "#gray", (Vector3 rgb){
-      num s = Math.max(Math.max(rgb.r, rgb.g), rgb.b);
-      return new Vector4(s, s, s, 1.0);
-    });
-
-    this._createTextureLink("#red_link", "#red", (Vector3 p){
-      return new Vector4(p.r, 0.0, 0.0, 1.0);
-    });
-
-    this._createTextureLink("#green_link", "#green", (Vector3 p){
-      return new Vector4(0.0, p.g, 0.0, 1.0);
-    });
-
-    this._createTextureLink("#blue_link", "#blue", (Vector3 p){
-      return new Vector4(0.0, 0.0, p.b, 1.0);
-    });
-
-    this._setTexture3D(default_canvas);
-
-    //this,_initTrackBall();
-
     this._gl.useProgram(this._program);
+    document.querySelector("#default_link").onClick.listen((event) => this._setTexture3D(document.querySelector("#default")));
+    document.querySelector("#negative_positive_link").onClick.listen((event) => this._setTexture3D(document.querySelector("#negative_positive")));
+    this._setTexture3D(document.querySelector("#default"));
   }
 
   CanvasElement _texture_3d_canvas;
@@ -213,8 +149,8 @@ class Canvas {
     ctx.putImageData(im, 0, 0);
   }
 
-  void _setTexture3D(CanvasElement canvas) {
-    this._texture_3d_ctx.drawImage(canvas, 0, 16 * 15);
+  void _setTexture3D(ImageElement image) {
+    this._texture_3d_ctx.drawImage(image, 0, 16 * 15);
 
     var gl = this._gl;
     gl.bindTexture(GL.TEXTURE_2D, this._texture_3d);
@@ -294,37 +230,6 @@ class Canvas {
     this._video_canvas_context = video_canvas_context;
 
     this._video = document.querySelector("#video");
-//    this._video = new VideoElement()
-//      ..width = MOVIE_WIDTH
-//      ..height = MOVIE_HEIGHT
-//      ..src = MOVIE_URI
-//      ..loop = true
-//    ;
-  }
-
-  void _initTrackBall() {
-    Point p0 = null;
-    this._canvas.onMouseDown.listen((MouseEvent event){
-      event.preventDefault();
-
-      p0 = event.client;
-    });
-
-    this._canvas.onMouseMove.listen((MouseEvent event){
-      event.preventDefault();
-
-      if(p0 != null) {
-        Point p = event.client - p0;
-        this._quaternion = (new Quaternion.identity() .. setEuler(p.x * 0.01, p.y * 0.01, 0.0)) * this._quaternion;
-        p0 = event.client;
-      }
-    });
-
-    this._canvas.onMouseUp.listen((MouseEvent event){
-      event.preventDefault();
-
-      p0 = null;
-    });
   }
 
   Future<Stream<num>> start() {
@@ -334,7 +239,6 @@ class Canvas {
     HttpRequest request = new HttpRequest();
     request.onLoad.listen((event){
       var gl = this._gl;
-      gl.getExtension("OES_float_linear");
       this._video.play();
 
       Map mesh = JSON.decode(request.responseText);
@@ -378,11 +282,9 @@ class Canvas {
 
     Matrix4 projection = new Matrix4.identity();
     num aspect = this._canvas.width / this._canvas.height;
-    //setPerspectiveMatrix(projection, Math.PI * 60.0 / 180.0, aspect, 0.1, 1000.0);
-    setOrthographicMatrix(projection, -1, 1, -1.0 / aspect, 1.0 / aspect, 0.1, 1000.0);
+    setOrthographicMatrix(projection, -1, 1, -1.0 / aspect, 1.0 / aspect, -1.0, 1.0);
 
     Matrix4 view = new Matrix4.identity();
-    setViewMatrix(view, this._look_from, new Vector3(0.0, 0.0, 0.0), new Vector3(0.0, 1.0, 0.0));
 
     Matrix4 model = new Matrix4.identity();
     model.setRotation(this._quaternion.asRotationMatrix());
