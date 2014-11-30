@@ -60,17 +60,15 @@ class Canvas {
   varying vec2 v_texture_coord;
 
   void main(void){
-    float h = 1.0 / 512.0;
-    float p = 1.0 / 256.0;
-    float q = 1.0 / 256.0;
-
     vec4 src = texture2D(texture, v_texture_coord);
-    float y = src.g * 15.0 * p + h;
+    float y = (src.g * 15.0 / 16.0) + (1.0 / 32.0);
 
     float z = src.b * 15.0;
     float z0 = floor(z);
     float z1 = ceil(z);
 
+    float h = 1.0 / 512.0;
+    float p = 1.0 / 256.0;
     float x0 = z0 * 16.0 * p + src.r * 15.0 * p + h;
     float x1 = z1 * 16.0 * p + src.r * 15.0 * p + h;
     vec4 c0 = texture2D(texture_3d, vec2(x0, y));
@@ -97,7 +95,9 @@ class Canvas {
     this._gl.useProgram(this._program);
     document.querySelector("#default_link").onClick.listen((event) => this._setTexture3D(document.querySelector("#default")));
     document.querySelector("#negative_positive_link").onClick.listen((event) => this._setTexture3D(document.querySelector("#negative_positive")));
-    this._setTexture3D(document.querySelector("#default"));
+
+    ImageElement default_image = document.querySelector("#default");
+    this._setTexture3D(default_image);
   }
 
   CanvasElement _texture_3d_canvas;
@@ -120,37 +120,15 @@ class Canvas {
 
     this._texture_3d_canvas = new CanvasElement()
       ..width = 256
-      ..height = 256
+      ..height = 16
     ;
 
     this._texture_3d_ctx = this._texture_3d_canvas.getContext("2d");
-    this._texture_3d_image_data = this._texture_3d_ctx.getImageData(0, 0, 256, 256);
-  }
-
-  void _drawTexture3D(CanvasElement canvas, Vector4 f(Vector3)) {
-    var ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
-    var im = ctx.getImageData(0, 0, 256, 16);
-
-    for(int y = 0; y < 16; y++) {
-      for(int x = 0; x < 256; x++) {
-        var color = f(new Vector3(
-          (x % 16) / 15,
-          1.0 - (y / 15),
-          (x ~/ 16) / 15
-        ));
-
-        int offset = (y * 256 + x) * 4;
-        for(int i = 0; i < 4; i++) {
-          im.data[offset + i] = (color.storage[i] * 255.0).toInt();
-        }
-      }
-    }
-
-    ctx.putImageData(im, 0, 0);
+    this._texture_3d_image_data = this._texture_3d_ctx.getImageData(0, 0, 256, 16);
   }
 
   void _setTexture3D(ImageElement image) {
-    this._texture_3d_ctx.drawImage(image, 0, 16 * 15);
+    this._texture_3d_ctx.drawImage(image, 0, 0);
 
     var gl = this._gl;
     gl.bindTexture(GL.TEXTURE_2D, this._texture_3d);
