@@ -76,7 +76,7 @@ class Canvas {
     vec4 c0 = texture2D(texture_3d, vec2(x0, y));
     vec4 c1 = texture2D(texture_3d, vec2(x1, y));
 
-    float blend = clamp(z1 - z0, 0.0, 1.0);
+    float blend = clamp(z - z0, 0.0, 1.0);
 
     gl_FragColor  = (c1 - c0) * blend + c0;
   }
